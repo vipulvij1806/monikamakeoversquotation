@@ -1,0 +1,52 @@
+# GitLab CI/CD Pipeline Configuration
+
+image: node:18-alpine
+
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  NPM_CACHE_FOLDER: .npm
+
+cache:
+  paths:
+    - .npm/
+    - node_modules/
+
+before_script:
+  - npm ci --cache .npm --prefer-offline
+
+build:
+  stage: build
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 day
+  only:
+    - main
+    - develop
+
+test:lint:
+  stage: test
+  script:
+    - npm run lint
+  allow_failure: true
+  only:
+    - merge_requests
+    - develop
+
+pages:
+  stage: deploy
+  script:
+    - npm run build
+    - mkdir -p public
+    - cp -r dist/* public/
+  artifacts:
+    paths:
+      - public/
+  only:
+    - main
